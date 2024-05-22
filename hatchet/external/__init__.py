@@ -15,11 +15,13 @@ class VersionError(Exception):
 
 try:
     import IPython
+
     # Testing IPython version
     if int(IPython.__version__.split(".")[0]) > 7:
         raise VersionError()
 
-    from .roundtrip.roundtrip.manager import Roundtrip    
+    from .roundtrip.roundtrip.manager import Roundtrip
+
     # Refrencing Roundtrip here to resolve scope issues with import
     Roundtrip
 
