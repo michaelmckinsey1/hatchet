@@ -312,7 +312,7 @@ class RoundTrip:
             js_to_py_converter=from_js_converter,
         )
 
-    def manage_jupter_change(self, event=None):
+    def manage_jupter_change(self, *args, **kwargs):
         """
         Callback function which runs after a cell is executed.
 
