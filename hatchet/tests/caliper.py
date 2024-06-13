@@ -289,10 +289,13 @@ def test_graphframe_native_lulesh_from_file_node_order(caliper_ordered_cali):
         assert node_data == expected_data_order[i]
 
     # check the tree ordering is correct as well
-    output = gf.tree(metric_column="nid")
-    for i in range(1, 20):
-        location = output.find(str(i))
-        assert location != 0
+    gf.dataframe["hnid"] = [
+        node._hatchet_nid for node in gf.graph.node_order_traverse()
+    ]
+    output = gf.tree(metric_column="hnid", render_header=False, precision=3)
+    for i in gf.dataframe["hnid"].tolist():
+        location = output.find(str(i) + ".000")
+        assert location != -1
         output = output[location:]
 
 
@@ -363,10 +366,13 @@ def test_graphframe_native_lulesh_from_caliperreader_node_order(caliper_ordered_
         assert node_data == expected_data_order[i]
 
     # check the tree ordering is correct as well
-    output = gf.tree(metric_column="nid")
-    for i in range(1, 20):
-        location = output.find(str(i))
-        assert location != 0
+    gf.dataframe["hnid"] = [
+        node._hatchet_nid for node in gf.graph.node_order_traverse()
+    ]
+    output = gf.tree(metric_column="hnid", render_header=False, precision=3)
+    for i in gf.dataframe["hnid"].tolist():
+        location = output.find(str(i) + ".000")
+        assert location != -1
         output = output[location:]
 
 
@@ -434,10 +440,13 @@ def test_graphframe_lulesh_from_json_node_order(caliper_ordered_json):
         assert node_time == expected_data_order[i]
 
     # check the tree ordering is correct as well
-    output = gf.tree(metric_column="nid")
-    for i in range(1, 20):
-        location = output.find(str(i))
-        assert location != 0
+    gf.dataframe["hnid"] = [
+        node._hatchet_nid for node in gf.graph.node_order_traverse()
+    ]
+    output = gf.tree(metric_column="hnid", render_header=False, precision=3)
+    for i in gf.dataframe["hnid"].tolist():
+        location = output.find(str(i) + ".000")
+        assert location != -1
         output = output[location:]
 
 
@@ -504,10 +513,13 @@ def test_graphframe_native_lulesh_from_duplicate_node_order(caliper_ordered_dup)
         assert node_data == expected_data_order[i]
 
     # check the tree ordering is correct as well
-    output = gf.tree(metric_column="nid")
-    for i in range(1, 20):
-        location = output.find(str(i))
-        assert location != 0
+    gf.dataframe["hnid"] = [
+        node._hatchet_nid for node in gf.graph.node_order_traverse()
+    ]
+    output = gf.tree(metric_column="hnid", render_header=False, precision=3)
+    for i in gf.dataframe["hnid"].tolist():
+        location = output.find(str(i) + ".000")
+        assert location != -1
         output = output[location:]
 
 
@@ -575,10 +587,13 @@ def test_graphframe_lulesh_from_duplicate_json_node_order(caliper_ordered_json_d
         assert node_time == expected_data_order[i]
 
     # check the tree ordering is correct as well
-    output = gf.tree(metric_column="nid")
-    for i in range(1, 20):
-        location = output.find(str(i))
-        assert location != 0
+    gf.dataframe["hnid"] = [
+        node._hatchet_nid for node in gf.graph.node_order_traverse()
+    ]
+    output = gf.tree(metric_column="hnid", render_header=False, precision=3)
+    for i in gf.dataframe["hnid"].tolist():
+        location = output.find(str(i) + ".000")
+        assert location != -1
         output = output[location:]
 
 
@@ -659,10 +674,13 @@ def test_graphframe_native_lulesh_from_file_node_order_mpi(caliper_ordered_cali_
         assert node_data == expected_data_order[i]
 
     # check the tree ordering is correct as well
-    output = gf.tree(metric_column="nid")
-    for i in range(1, 20):
-        location = output.find(str(i))
-        assert location != 0
+    gf.dataframe["hnid"] = [
+        node._hatchet_nid for node in gf.graph.node_order_traverse()
+    ]
+    output = gf.tree(metric_column="hnid", render_header=False, precision=3)
+    for i in gf.dataframe["hnid"].tolist():
+        location = output.find(str(i) + ".000")
+        assert location != -1
         output = output[location:]
 
 
@@ -750,10 +768,13 @@ def test_graphframe_native_lulesh_from_caliperreader_node_order_mpi(
         assert node_data == expected_data_order[i]
 
     # check the tree ordering is correct as well
-    output = gf.tree(metric_column="nid")
-    for i in range(1, 20):
-        location = output.find(str(i))
-        assert location != 0
+    gf.dataframe["hnid"] = [
+        node._hatchet_nid for node in gf.graph.node_order_traverse()
+    ]
+    output = gf.tree(metric_column="hnid", render_header=False, precision=3)
+    for i in gf.dataframe["hnid"].tolist():
+        location = output.find(str(i) + ".000")
+        assert location != -1
         output = output[location:]
 
 
