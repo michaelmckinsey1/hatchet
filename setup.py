@@ -111,7 +111,7 @@ setup(
         "pydot",
         "PyYAML",
         "matplotlib",
-        "numpy",
+        "numpy < 2.0.0",
         "pandas",
         "textX < 3.0.0; python_version < '3.6'",
         "textX >= 3.0.0; python_version >= '3.6'",
