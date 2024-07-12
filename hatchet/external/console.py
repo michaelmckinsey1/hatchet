@@ -95,7 +95,7 @@ class ConsoleRenderer:
         else:
             self.colors = self.colors_disabled
 
-        if isinstance(self.metric_columns, str):
+        if isinstance(self.metric_columns, (str, tuple)):
             self.primary_metric = self.metric_columns
             self.second_metric = None
         elif isinstance(self.metric_columns, list):
