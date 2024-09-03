@@ -29,7 +29,7 @@ except ImportError:
     pass
 
 except VersionError:
-    if not isinstance(IPython.get_ipython(), type(None)):
+    if IPython.get_ipython() is not None:
         print(
             "Warning: Roundtrip module could not be loaded. Requires jupyter notebook version <= 7.x."
         )
