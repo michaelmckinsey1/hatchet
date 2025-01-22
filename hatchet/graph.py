@@ -23,10 +23,10 @@ def index_by(attr, objects):
 class Graph:
     """A possibly multi-rooted tree or graph from one input dataset."""
 
-    def __init__(self, roots):
+    def __init__(self, roots, node_ordering=False):
         assert roots is not None
         self.roots = roots
-        self.node_ordering = False
+        self.node_ordering = node_ordering
 
     def traverse(self, order="pre", attrs=None, visited=None):
         """Preorder traversal of all roots of this Graph.
@@ -38,6 +38,12 @@ class Graph:
 
         Only preorder traversal is currently supported.
         """
+        # Call node_order_traverse instead if node_ordering is True
+        if self.node_ordering:
+            yield from self.node_order_traverse(
+                order=order, attrs=attrs, visited=visited
+            )
+            return
         # share visited dict so that we visit each node at most once.
         if visited is None:
             visited = {}
@@ -186,8 +192,9 @@ class Graph:
             for old_child in old.children:
                 new.children.append(old_to_new[old_child])
 
-        graph = Graph([old_to_new[r] for r in self.roots])
-        graph.node_ordering = self.node_ordering
+        graph = Graph(
+            [old_to_new[r] for r in self.roots], node_ordering=self.node_ordering
+        )
         graph.enumerate_traverse()
 
         return graph
@@ -337,7 +344,7 @@ class Graph:
             None,
         )
 
-        graph = Graph(new_roots)
+        graph = Graph(new_roots, node_ordering=self.node_ordering)
         graph.enumerate_traverse()
 
         return graph
