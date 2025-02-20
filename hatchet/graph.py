@@ -216,6 +216,10 @@ class Graph:
         if old_to_new is None:
             old_to_new = {}  # mapping from old nodes to new nodes
 
+        def key(n):
+            """Sort nodes by hatchet nid if node_ordering enabled, otherwise sort by frame."""
+            return n._hatchet_nid if self.node_ordering else n.frame
+
         def _merge(self_children, other_children, parent):
             """Recursively merge children of self and other.
 
@@ -258,7 +262,7 @@ class Graph:
                     if not new_node:
                         new_node = make_node(self_child)
                         _merge(
-                            sorted(self_child.children, key=lambda n: n.frame),
+                            sorted(self_child.children, key=key),
                             (),
                             new_node,
                         )
@@ -272,7 +276,7 @@ class Graph:
                         new_node = make_node(other_child)
                         _merge(
                             (),
-                            sorted(other_child.children, key=lambda n: n.frame),
+                            sorted(other_child.children, key=key),
                             new_node,
                         )
                     connect(parent, new_node)
@@ -301,8 +305,8 @@ class Graph:
                         other_side = []
 
                     _merge(
-                        sorted(self_side, key=lambda n: n.frame),
-                        sorted(other_side, key=lambda n: n.frame),
+                        sorted(self_side, key=key),
+                        sorted(other_side, key=key),
                         new_node,
                     )
 
@@ -316,7 +320,7 @@ class Graph:
                 if not new_node:
                     new_node = make_node(self_child)
                     _merge(
-                        sorted(self_child.children, key=lambda n: n.frame),
+                        sorted(self_child.children, key=key),
                         (),
                         new_node,
                     )
@@ -329,7 +333,7 @@ class Graph:
                     new_node = make_node(other_child)
                     _merge(
                         (),
-                        sorted(other_child.children, key=lambda n: n.frame),
+                        sorted(other_child.children, key=key),
                         new_node,
                     )
                 connect(parent, new_node)
@@ -339,8 +343,8 @@ class Graph:
 
         # First establish which nodes correspond to each other
         new_roots = _merge(
-            sorted(self.roots, key=lambda n: n.frame),
-            sorted(other.roots, key=lambda n: n.frame),
+            sorted(self.roots, key=key),
+            sorted(other.roots, key=key),
             None,
         )
 
