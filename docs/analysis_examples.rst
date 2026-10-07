@@ -35,8 +35,14 @@ output is the `cali <http://llnl.github.io/Caliper/OutputFormats.html#cali>`_ fi
 .. literalinclude:: examples/read/caliper_caliperreader_cali.py
     :language: python
 
-Alternatively, the ``from_caliper`` reader can be used for Caliper files generated
-with Caliper version ``<=2.10``. This is useful if the user intends to use ``cali-query``.
+Alternatively, the ``from_caliper`` reader runs ``cali-query`` (which must be in
+your ``PATH``) on the file and reads the resulting json-split data. This is
+useful if you want to choose the grouping and metrics with a CalQL query. Group
+the query by ``path``: since Caliper 2.10, function annotations are recorded as
+``region`` and timings as ``time.duration.ns``, so older queries that group by
+``function`` fail with "No hierarchy column". The query below works for files
+recorded with any Caliper version (with ``cali-query`` older than 2.10, use
+``prop:nested`` instead of ``path``).
 
 .. literalinclude:: examples/read/caliper_cali_query.py
     :language: python

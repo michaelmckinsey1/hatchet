@@ -3,6 +3,7 @@
 #
 # SPDX-License-Identifier: MIT
 
+import json
 import subprocess
 import numpy as np
 
@@ -118,6 +119,140 @@ def test_lulesh_json_stream(lulesh_caliper_cali):
     gf = GraphFrame.from_caliper(cali_json.stdout, node_ordering=False)
 
     assert len(gf.dataframe.groupby("name")) == 18
+
+
+# Query used by the from_caliper documentation examples. It must work for
+# files recorded with any Caliper version (see issue #161).
+docs_cali_query = (
+    "let sum#time.duration=scale(sum#time.duration.ns,1e-9) "
+    "select path,"
+    "sum(sum#time.duration) as time,"
+    'inclusive_sum(sum#time.duration) as "time (inc)",'
+    'min(aggregate.slot) as "Node order" '
+    "group by path format json-split"
+)
+
+
+def names_in_order(gf):
+    """Node names in the order in which hatchet traverses (and prints) them."""
+    return [node.frame["name"] for node in gf.graph.traverse()]
+
+
+def test_from_caliper_without_node_order_column(lulesh_caliper_json):
+    """With the default node_ordering=True, data without a "Node order" column
+    falls back to the default ordering with a warning instead of failing."""
+    with pytest.warns(UserWarning, match="Node order"):
+        gf = GraphFrame.from_caliper(str(lulesh_caliper_json))
+    expected = GraphFrame.from_caliper(str(lulesh_caliper_json), node_ordering=False)
+
+    assert gf.graph.node_ordering is False
+    assert names_in_order(gf) == names_in_order(expected)
+    assert gf.dataframe["time"].tolist() == expected.dataframe["time"].tolist()
+
+
+def test_from_caliper_node_order_column_position(caliper_ordered_json, tmpdir):
+    """The "Node order" column is found by name, wherever cali-query puts it,
+    and does not rely on the rows being in node order."""
+    expected = GraphFrame.from_caliper(str(caliper_ordered_json))
+
+    with open(str(caliper_ordered_json)) as f:
+        data = json.load(f)
+    # put a metric first and "Node order" last, and reverse the rows
+    perm = [
+        data["columns"].index(col) for col in ("time", "path", "mpi.rank", "Node order")
+    ]
+    for key in ("columns", "column_metadata"):
+        data[key] = [data[key][i] for i in perm]
+    data["data"] = [[row[i] for i in perm] for row in reversed(data["data"])]
+
+    moved = tmpdir.join("node-order-last.json")
+    moved.write(json.dumps(data))
+    gf = GraphFrame.from_caliper(str(moved))
+
+    assert gf.graph.node_ordering is True
+    assert names_in_order(gf) == names_in_order(expected)
+    assert (
+        gf.dataframe[["name", "time"]].values.tolist()
+        == expected.dataframe[["name", "time"]].values.tolist()
+    )
+    assert "Node order" not in gf.dataframe.columns
+    assert "Node order" not in gf.exc_metrics + gf.inc_metrics
+
+
+def test_from_caliper_no_hierarchy_column(tmpdir):
+    """Data without a hierarchy column raises a ValueError (no sys.exit)."""
+    # what cali-query returns for "group by function" on files recorded with
+    # Caliper >= 2.10, where function annotations are recorded as "region"
+    no_path = tmpdir.join("no-hierarchy.json")
+    no_path.write(
+        json.dumps(
+            {
+                "data": [[None]],
+                "columns": ["sum#sum#time.duration"],
+                "column_metadata": [{"is_value": True}],
+                "nodes": [],
+            }
+        )
+    )
+
+    with pytest.raises(ValueError, match="group by 'path'"):
+        GraphFrame.from_caliper(str(no_path))
+
+
+@pytest.mark.skipif(not which("cali-query"), reason="needs cali-query to be in path")
+def test_from_caliper_docs_query_old_caliper(lulesh_caliper_cali):
+    """The documented query works on a file recorded with Caliper < 2.10."""
+    with pytest.warns(UserWarning, match="Node order"):
+        gf = GraphFrame.from_caliper(str(lulesh_caliper_cali), docs_cali_query)
+
+    # "group by path" also includes the lulesh.cycle loop region
+    assert len(gf.graph) == 19
+    assert "lulesh.cycle" in gf.dataframe["name"].values
+    assert gf.exc_metrics == ["time"]
+    assert gf.inc_metrics == ["time (inc)"]
+
+
+@pytest.mark.skipif(not which("cali-query"), reason="needs cali-query to be in path")
+def test_from_caliper_query_region_annotations(caliper_ordered_cali):
+    """Query a file recorded with Caliper >= 2.10, which records functions as
+    "region" and the node order as aggregate.slot."""
+    old_query = (
+        "select function,sum(sum#inclusive#sum#time.duration) "
+        "group by function format json-split"
+    )
+    with pytest.raises(ValueError, match="No hierarchy column"):
+        GraphFrame.from_caliper(str(caliper_ordered_cali), old_query)
+
+    query = (
+        "select path,"
+        'sum(sum#inclusive#sum#time.duration) as "time (inc)",'
+        'min(min#min#aggregate.slot) as "Node order" '
+        "group by path format json-split"
+    )
+    gf = GraphFrame.from_caliper(str(caliper_ordered_cali), query)
+
+    assert gf.graph.node_ordering is True
+    assert names_in_order(gf) == [
+        "main",
+        "lulesh.cycle",
+        "TimeIncrement",
+        "LagrangeLeapFrog",
+        "LagrangeNodal",
+        "CalcForceForNodes",
+        "CalcVolumeForceForElems",
+        "IntegrateStressForElems",
+        "CalcHourglassControlForElems",
+        "CalcFBHourglassForceForElems",
+        "LagrangeElements",
+        "CalcLagrangeElements",
+        "CalcKinematicsForElems",
+        "CalcQForElems",
+        "CalcMonotonicQForElems",
+        "ApplyMaterialPropertiesForElems",
+        "EvalEOSForElems",
+        "CalcEnergyForElems",
+        "CalcTimeConstraintsForElems",
+    ]
 
 
 @pytest.mark.skipif(sys.version_info > (3, 8), reason="Temporarily allow this to fail.")

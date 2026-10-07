@@ -15,13 +15,17 @@ if __name__ == "__main__":
         "../../../hatchet/tests/data/caliper-lulesh-cali/lulesh-annotation-profile.cali"
     )
 
-    # Setup desired cali query.
+    # Setup desired cali query. It works for files recorded with any Caliper
+    # version; the "Read in a Caliper cali file" example (caliper_cali_query.py)
+    # explains each clause.
     cali_query = "cali-query"
-    grouping_attribute = "function"
-    default_metric = "sum(sum#time.duration),inclusive_sum(sum#time.duration)"
-    query = "select function,%s group by %s format json-split" % (
-        default_metric,
-        grouping_attribute,
+    query = (
+        "let sum#time.duration=scale(sum#time.duration.ns,1e-9) "
+        "select path,"
+        "sum(sum#time.duration) as time,"
+        'inclusive_sum(sum#time.duration) as "time (inc)",'
+        'min(aggregate.slot) as "Node order" '
+        "group by path format json-split"
     )
 
     # Use ``cali-query`` here to produce the json-split stream.
