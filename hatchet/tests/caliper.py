@@ -941,9 +941,7 @@ def test_rocm_kernel_records_merge_on_single_kernel_node():
             "rocm.kernel.name": _FakeCaliperAttribute("string"),
             "time.duration": _FakeCaliperAttribute("double", is_value=True),
             "SQ_INSTS": _FakeCaliperAttribute("double", is_value=True),
-            "MaxPerfectLoopDimensions": _FakeCaliperAttribute(
-                "int", is_value=True
-            ),
+            "MaxPerfectLoopDimensions": _FakeCaliperAttribute("int", is_value=True),
         },
     )
 
