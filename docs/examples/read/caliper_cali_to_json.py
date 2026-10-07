@@ -15,9 +15,8 @@ if __name__ == "__main__":
         "../../../hatchet/tests/data/caliper-lulesh-cali/lulesh-annotation-profile.cali"
     )
 
-    # Setup desired cali query. It works for files recorded with any Caliper
-    # version; the "Read in a Caliper cali file" example (caliper_cali_query.py)
-    # explains each clause.
+    # This query supports raw .cali files from Caliper's aggregate and recorder
+    # services. See caliper_cali_query.py for compatibility notes.
     cali_query = "cali-query"
     query = (
         "let sum#time.duration=scale(sum#time.duration.ns,1e-9) "

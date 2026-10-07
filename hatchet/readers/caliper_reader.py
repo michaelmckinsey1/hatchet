@@ -167,9 +167,10 @@ class CaliperReader:
                 warnings.warn(
                     "node_ordering=True, but the Caliper data has no 'Node "
                     "order' column, so nodes are ordered alphabetically. To keep "
-                    "call order, add 'min(aggregate.slot) as \"Node order\"' to "
-                    "the cali-query query (requires data recorded with Caliper "
-                    ">= 2.10); pass node_ordering=False to silence this warning."
+                    "call order, select it as 'Node order', e.g. add "
+                    "'min(aggregate.slot) as \"Node order\"' to the cali-query "
+                    "query for raw data recorded with Caliper >= 2.10; pass "
+                    "node_ordering=False to silence this warning."
                 )
                 self.node_ordering = False
 

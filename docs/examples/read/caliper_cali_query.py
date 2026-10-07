@@ -14,19 +14,10 @@ if __name__ == "__main__":
         "../../../hatchet/tests/data/caliper-lulesh-cali/lulesh-annotation-profile.cali"
     )
 
-    # Setup desired cali query. This query works for files recorded with any
-    # Caliper version:
-    # - ``group by path`` groups by all nested (region) attributes. Since
-    #   Caliper 2.10, function annotations are recorded as ``region`` instead
-    #   of ``function``, so grouping by ``function`` finds no hierarchy.
-    #   (``cali-query`` older than 2.10 needs ``prop:nested`` instead of
-    #   ``path``.)
-    # - Since Caliper 2.10, the timer records ``time.duration.ns``. The ``let``
-    #   clause converts it to seconds; it does nothing for older files, which
-    #   record ``time.duration`` directly.
-    # - ``min(aggregate.slot)`` is the order in which regions were first
-    #   entered (Caliper >= 2.10), which hatchet uses to order the tree. Older
-    #   files do not have it, so hatchet warns and orders nodes by name.
+    # This query supports raw .cali files from Caliper's aggregate and recorder
+    # services. Use ``from_caliperreader`` for output from built-in configs such
+    # as hatchet-region-profile. With ``cali-query`` before 2.10, use
+    # ``prop:nested`` instead of ``path``.
     query = (
         "let sum#time.duration=scale(sum#time.duration.ns,1e-9) "
         "select path,"
