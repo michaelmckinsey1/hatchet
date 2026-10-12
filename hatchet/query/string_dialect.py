@@ -300,7 +300,7 @@ class StringQuery(Query):
         return [
             None,
             obj.name,
-            "df_row[{}] is None".format(
+            "pd.isna(df_row[{}])".format(
                 str(tuple(obj.prop.ids))
                 if len(obj.prop.ids) > 1
                 else "'{}'".format(obj.prop.ids[0])
@@ -332,7 +332,7 @@ class StringQuery(Query):
             None,
             obj.name,
             self._add_aggregation_call_to_multi_idx_predicate(
-                "df_row[{}].apply(lambda elem: elem is None)".format(
+                "df_row[{}].apply(lambda elem: pd.isna(elem))".format(
                     str(tuple(obj.prop.ids))
                     if len(obj.prop.ids) > 1
                     else "'{}'".format(obj.prop.ids[0])
@@ -360,7 +360,7 @@ class StringQuery(Query):
         return [
             None,
             obj.name,
-            "df_row[{}] is not None".format(
+            "pd.notna(df_row[{}])".format(
                 str(tuple(obj.prop.ids))
                 if len(obj.prop.ids) > 1
                 else "'{}'".format(obj.prop.ids[0])
@@ -387,7 +387,7 @@ class StringQuery(Query):
             None,
             obj.name,
             self._add_aggregation_call_to_multi_idx_predicate(
-                "df_row[{}].apply(lambda elem: elem is not None)".format(
+                "df_row[{}].apply(lambda elem: pd.notna(elem))".format(
                     str(tuple(obj.prop.ids))
                     if len(obj.prop.ids) > 1
                     else "'{}'".format(obj.prop.ids[0])

@@ -15,6 +15,7 @@ from hatchet.node import Node
 from hatchet.graph import Graph
 from hatchet.frame import Frame
 from hatchet.util.timer import Timer
+from pandas.api.types import is_numeric_dtype
 
 
 def __raise_cali_type_error(msg):
@@ -103,9 +104,7 @@ class CaliperNativeReader:
             for column in df_metrics.columns:
                 if column == "nid":
                     pass
-                elif np.issubdtype(
-                    df_metrics[column].dtype, np.number
-                ):  # Numeric columns
+                elif is_numeric_dtype(df_metrics[column].dtype):  # Numeric columns
                     aggregation_functions[column] = lambda x: x.sum(skipna=False)
                 else:  # Non-numeric columns
                     aggregation_functions[column] = lambda x: tuple(set(x))
@@ -531,7 +530,7 @@ class CaliperNativeReader:
                             missing_nodes.append(node_dict)
                     elif len(metric_rows) < num_ranks:
                         # add a row for each missing MPI rank
-                        present_ranks = metric_rows["mpi.rank"].values
+                        present_ranks = metric_rows["mpi.rank"].to_numpy()
                         missing_ranks = [x for x in rank_list if x not in present_ranks]
                         for rank in missing_ranks:
                             node_dict = dict(default_metric_dict)

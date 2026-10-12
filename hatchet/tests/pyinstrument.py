@@ -8,6 +8,7 @@ import json
 import numpy as np
 
 from hatchet import GraphFrame
+from pandas.api.types import is_string_dtype
 
 
 def test_graphframe(hatchet_pyinstrument_json):
@@ -69,7 +70,7 @@ def test_graphframe(hatchet_pyinstrument_json):
         elif col in ("is_application_code"):
             assert gf.dataframe[col].dtype == bool
         elif col in ("name", "type", "file", "node"):
-            assert gf.dataframe[col].dtype == object
+            assert is_string_dtype(gf.dataframe[col].dtype)
 
 
 def test_tree(monkeypatch, hatchet_pyinstrument_json):

@@ -12,6 +12,7 @@ import sys
 from hatchet import GraphFrame
 from hatchet.readers.caliper_reader import CaliperReader
 from hatchet.util.executable import which
+from pandas.api.types import is_string_dtype
 
 caliperreader_avail = True
 try:
@@ -59,7 +60,7 @@ def test_graphframe(lulesh_caliper_json):
         elif col in ("nid", "rank"):
             assert gf.dataframe[col].dtype == np.int64
         elif col in ("name", "node"):
-            assert gf.dataframe[col].dtype == object
+            assert is_string_dtype(gf.dataframe[col].dtype)
 
     # TODO: add tests to confirm values in dataframe
 
@@ -197,7 +198,7 @@ def test_graphframe_native_lulesh_from_file(lulesh_caliper_cali):
         elif col in ("nid", "rank"):
             assert gf.dataframe[col].dtype == np.float64
         elif col in ("name", "node"):
-            assert gf.dataframe[col].dtype == object
+            assert is_string_dtype(gf.dataframe[col].dtype)
 
     assert type(gf.metadata["cali.channel"]) == str
     assert type(gf.metadata["cali.caliper.version"]) == str
@@ -223,7 +224,7 @@ def test_graphframe_native_lulesh_from_caliperreader(lulesh_caliper_cali):
         elif col in ("nid", "rank"):
             assert gf.dataframe[col].dtype == np.float64
         elif col in ("name", "node"):
-            assert gf.dataframe[col].dtype == object
+            assert is_string_dtype(gf.dataframe[col].dtype)
 
 
 def test_graphframe_native_lulesh_from_file_node_order(caliper_ordered_cali):
@@ -858,7 +859,7 @@ def test_sw4_cuda_from_caliperreader(sw4_caliper_cuda_activity_profile_cali):
         elif col in "rank":
             assert gf.dataframe[col].dtype == np.int64
         elif col in "name":
-            assert gf.dataframe[col].dtype == object
+            assert is_string_dtype(gf.dataframe[col].dtype)
 
     for col in gf.exc_metrics + gf.inc_metrics:
         assert col in gf.dataframe.columns
@@ -904,7 +905,7 @@ def test_graphframe_timeseries_lulesh_from_file(caliper_timeseries_cali):
         elif col in ("nid", "rank"):
             assert gf.dataframe[col].dtype == np.float64
         elif col in ("name", "node"):
-            assert gf.dataframe[col].dtype == object
+            assert is_string_dtype(gf.dataframe[col].dtype)
 
     assert type(gf.metadata["cali.channel"]) == str
     assert type(gf.metadata["cali.caliper.version"]) == str
