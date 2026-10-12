@@ -9,6 +9,7 @@ import os
 
 from hatchet import GraphFrame
 from hatchet.readers.hpctoolkit_reader import HPCToolkitReader
+from pandas.api.types import is_string_dtype
 
 modules = [
     "cpi",
@@ -73,7 +74,7 @@ def test_graphframe(data_dir, calc_pi_hpct_db):
         elif col in ("nid", "rank", "line"):
             assert gf.dataframe[col].dtype == np.int64
         elif col in ("name", "type", "file", "module", "node"):
-            assert gf.dataframe[col].dtype == object
+            assert is_string_dtype(gf.dataframe[col].dtype)
 
     # add tests to confirm values in dataframe
     df = pd.read_csv(str(os.path.join(data_dir, "hpctoolkit-cpi-graphframe.csv")))
@@ -84,11 +85,11 @@ def test_graphframe(data_dir, calc_pi_hpct_db):
     gf.dataframe.sort_values(by=["nid", "rank"], inplace=True)
     df.sort_values(by=["nid", "rank"], inplace=True)
 
-    t1 = gf.dataframe["time"].values
-    t2 = df["time"].values
+    t1 = gf.dataframe["time"].to_numpy()
+    t2 = df["time"].to_numpy()
 
-    ti1 = gf.dataframe["time (inc)"].values
-    ti2 = df["time (inc)"].values
+    ti1 = gf.dataframe["time (inc)"].to_numpy()
+    ti2 = df["time (inc)"].to_numpy()
 
     for v1, v2 in zip(t1, t2):
         assert v1 == v2
@@ -145,7 +146,7 @@ def test_allgather(data_dir, osu_allgather_hpct_db):
         elif col in ("nid", "rank", "thread", "line"):
             assert gf.dataframe[col].dtype == np.int64
         elif col in ("name", "type", "file", "module", "node"):
-            assert gf.dataframe[col].dtype == object
+            assert is_string_dtype(gf.dataframe[col].dtype)
 
     # add tests to confirm values in dataframe
     df = pd.read_csv(str(os.path.join(data_dir, "hpctoolkit-allgather-graphframe.csv")))
@@ -156,11 +157,11 @@ def test_allgather(data_dir, osu_allgather_hpct_db):
     gf.dataframe.sort_values(by=["nid", "rank", "thread"], inplace=True)
     df.sort_values(by=["nid", "rank", "thread"], inplace=True)
 
-    t1 = gf.dataframe["time"].values
-    t2 = df["time"].values
+    t1 = gf.dataframe["time"].to_numpy()
+    t2 = df["time"].to_numpy()
 
-    ti1 = gf.dataframe["time (inc)"].values
-    ti2 = df["time (inc)"].values
+    ti1 = gf.dataframe["time (inc)"].to_numpy()
+    ti2 = df["time (inc)"].to_numpy()
 
     for v1, v2 in zip(t1, t2):
         assert v1 == v2
@@ -200,5 +201,5 @@ def test_inclusive_time_calculation(data_dir, calc_pi_hpct_db):
 
     gf.update_inclusive_columns()
     assert all(
-        gf.dataframe["time (inc)"].values == gf.dataframe["orig_inc_time"].values
+        gf.dataframe["time (inc)"].to_numpy() == gf.dataframe["orig_inc_time"].to_numpy()
     )

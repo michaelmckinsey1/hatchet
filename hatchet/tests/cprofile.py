@@ -7,6 +7,7 @@ import numpy as np
 import re
 
 from hatchet import GraphFrame
+from pandas.api.types import is_string_dtype
 
 
 def test_graphframe(hatchet_cycle_pstats):
@@ -23,7 +24,7 @@ def test_graphframe(hatchet_cycle_pstats):
         elif col in ("line", "numcalls", "nativecalls"):
             assert gf.dataframe[col].dtype == np.int64
         elif col in ("name", "type", "file", "module", "node"):
-            assert gf.dataframe[col].dtype == object
+            assert is_string_dtype(gf.dataframe[col].dtype)
 
 
 def test_tree(monkeypatch, hatchet_cycle_pstats):

@@ -368,7 +368,7 @@ class CaliperReader:
                         missing_nodes.append(node_dict)
                 elif len(metric_rows) < self.num_ranks:
                     # add a row for each missing MPI rank
-                    present_ranks = metric_rows["rank"].values
+                    present_ranks = metric_rows["rank"].to_numpy()
                     missing_ranks = [x for x in rank_list if x not in present_ranks]
                     for rank in missing_ranks:
                         node_dict = dict(default_metric_dict)

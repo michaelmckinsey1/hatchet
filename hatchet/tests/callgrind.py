@@ -6,6 +6,7 @@
 import numpy as np
 
 from hatchet import GraphFrame
+from pandas.api.types import is_string_dtype
 from hatchet.readers.gprof_dot_reader import GprofDotReader
 
 roots = [
@@ -29,7 +30,7 @@ def test_graphframe(calc_pi_callgrind_dot):
         if col in ("time (inc)", "time"):
             assert gf.dataframe[col].dtype == np.float64
         elif col in ("name", "module", "node"):
-            assert gf.dataframe[col].dtype == object
+            assert is_string_dtype(gf.dataframe[col].dtype)
 
     # TODO: add tests to confirm values in dataframe
 

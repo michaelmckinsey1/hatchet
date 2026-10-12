@@ -6,6 +6,7 @@
 import numpy as np
 
 from hatchet import GraphFrame
+from pandas.api.types import is_string_dtype
 
 
 def test_graphframe(tau_profile_dir):
@@ -18,7 +19,7 @@ def test_graphframe(tau_profile_dir):
         elif col in ("line"):
             assert gf.dataframe[col].dtype == np.int64
         elif col in ("name", "node"):
-            assert gf.dataframe[col].dtype == object
+            assert is_string_dtype(gf.dataframe[col].dtype)
 
     # TODO: add tests to confirm values in dataframe
 
