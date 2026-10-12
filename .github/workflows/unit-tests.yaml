@@ -28,7 +28,7 @@ jobs:
             echo "Testing with Python 3.11+ (pandas version $MAJOR_VER detected)"
           else
             # pandas<3 supports older Python versions
-            echo "versions=[\"3.7\", \"3.8\", \"3.9\", \"3.10\", \"3.11\", \"3.12\", \"3.13\"]" >> $GITHUB_OUTPUT
+            echo "versions=[\"3.9\", \"3.10\", \"3.11\", \"3.12\", \"3.13\"]" >> $GITHUB_OUTPUT
             echo "Testing with Python 3.7+ (pandas version <3 detected)"
           fi
 
