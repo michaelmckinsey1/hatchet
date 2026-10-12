@@ -14,12 +14,17 @@ if __name__ == "__main__":
         "../../../hatchet/tests/data/caliper-lulesh-cali/lulesh-annotation-profile.cali"
     )
 
-    # Setup desired cali query.
-    grouping_attribute = "function"
-    default_metric = "sum(sum#time.duration),inclusive_sum(sum#time.duration)"
-    query = "select function,%s group by %s format json-split" % (
-        default_metric,
-        grouping_attribute,
+    # This query supports raw .cali files from Caliper's aggregate and recorder
+    # services. Use ``from_caliperreader`` for output from built-in configs such
+    # as hatchet-region-profile. With ``cali-query`` before 2.10, use
+    # ``prop:nested`` instead of ``path``.
+    query = (
+        "let sum#time.duration=scale(sum#time.duration.ns,1e-9) "
+        "select path,"
+        "sum(sum#time.duration) as time,"
+        'inclusive_sum(sum#time.duration) as "time (inc)",'
+        'min(aggregate.slot) as "Node order" '
+        "group by path format json-split"
     )
 
     # Use hatchet's ``from_caliper`` API with the path to the cali file and the

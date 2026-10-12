@@ -4,11 +4,11 @@
 # SPDX-License-Identifier: MIT
 
 import json
-import sys
 import re
 import subprocess
 import os
 import math
+import warnings
 
 import pandas as pd
 import numpy as np
@@ -49,6 +49,7 @@ class CaliperReader:
 
         self.idx_to_label = {}
         self.idx_to_node = {}
+        self.node_order = {}
 
         self.timer = Timer()
         self.nid_col_name = "nid"
@@ -102,7 +103,17 @@ class CaliperReader:
             self.node_type = "region"
             self.both_hierarchies = False
         else:
-            sys.exit("No hierarchy column in input file")
+            raise ValueError(
+                "No hierarchy column in the Caliper data (found columns: {}). "
+                "Hatchet needs a 'path' column (region annotations) or a "
+                "'source.function#callpath.address' column (call-path "
+                "sampling). When querying a .cali file, select and group by "
+                "'path' ('select path,... group by path format json-split'; "
+                "cali-query older than 2.10 needs 'prop:nested' instead of "
+                "'path'): since Caliper 2.10, function annotations are "
+                "recorded as 'region', so queries that group by 'function' "
+                "find no hierarchy in newer files.".format(self.json_cols)
+            )
 
         # remove data entries containing None in `path` column (null in json file)
         # first, get column where `path` data is
@@ -135,17 +146,74 @@ class CaliperReader:
             ):
                 self.json_cols[idx] = "time (inc)"
 
-        # make list of metric columns
+        # make list of metric columns ("Node order" is bookkeeping, not a metric)
         self.metric_columns = []
         for idx, item in enumerate(self.json_cols_mdata):
-            if self.json_cols[idx] != "rank" and item["is_value"] is True:
+            if (
+                self.json_cols[idx] not in ("rank", "Node order")
+                and item["is_value"] is True
+            ):
                 self.metric_columns.append(self.json_cols[idx])
+
+        # Caliper (>= 2.10) can record the order in which regions were first
+        # entered (min(aggregate.slot), aliased "Node order"). Only use it if
+        # the data actually contains it; otherwise fall back to the default
+        # (alphabetical) ordering instead of failing.
+        self.node_order = {}
+        if self.node_ordering:
+            if "Node order" in self.json_cols:
+                self.node_order = self._read_node_order()
+            if not self.node_order:
+                warnings.warn(
+                    "node_ordering=True, but the Caliper data has no 'Node "
+                    "order' column, so nodes are ordered alphabetically. To keep "
+                    "call order, select it as 'Node order', e.g. add "
+                    "'min(aggregate.slot) as \"Node order\"' to the cali-query "
+                    "query for raw data recorded with Caliper >= 2.10; pass "
+                    "node_ordering=False to silence this warning."
+                )
+                self.node_ordering = False
+
+    def _read_node_order(self):
+        """Map each hierarchy node index to its Caliper "Node order" value.
+
+        The column is looked up by name (its position depends on the query),
+        and the smallest value is used when a node has several rows, e.g. one
+        per MPI rank.
+        """
+        nid_col = self.json_cols.index(self.nid_col_name)
+        order_col = self.json_cols.index("Node order")
+
+        node_order = {}
+        for row in self.json_data:
+            nid, slot = row[nid_col], row[order_col]
+            if nid is None or slot is None:
+                continue
+            nid, slot = int(nid), int(slot)
+            if nid not in node_order or slot < node_order[nid]:
+                node_order[nid] = slot
+
+        if not node_order:
+            return node_order
+
+        # Nodes without rows of their own (e.g. intermediate call-path frames)
+        # inherit the smallest order in their subtree. Parents always precede
+        # their children in the json-split "nodes" section.
+        subtree_min = dict(node_order)
+        for idx in range(len(self.json_nodes) - 1, -1, -1):
+            parent = self.json_nodes[idx].get("parent")
+            if idx in subtree_min and parent is not None:
+                if parent not in subtree_min or subtree_min[idx] < subtree_min[parent]:
+                    subtree_min[parent] = subtree_min[idx]
+        for idx, slot in subtree_min.items():
+            node_order.setdefault(idx, slot)
+
+        return node_order
 
     def create_graph(self):
         list_roots = []
 
         global unknown_label_counter
-        order = -1
 
         # find nodes in the nodes section that represent the path hierarchy
         for idx, node in enumerate(self.json_nodes):
@@ -156,13 +224,9 @@ class CaliperReader:
             self.idx_to_label[idx] = node_label
 
             if node["column"] == self.path_col_name:
-                # If there is a node ordering, assign to the _hatchet_nid
-                if self.node_ordering and "Node order" not in self.json_cols:
-                    Exception(
-                        "node ordering cannot be true if min#min#aggregate.slot is not in the record"
-                    )
-                elif self.node_ordering and "Node order" in self.json_cols:
-                    order = self.json_data[idx][0]
+                # with node ordering, Caliper's call order becomes the
+                # _hatchet_nid (self.node_order is empty otherwise)
+                order = self.node_order.get(idx, -1)
 
                 if "parent" not in node:
                     # since this node does not have a parent, this is a root
@@ -381,9 +445,8 @@ class CaliperReader:
 
         # create a graph object once all the nodes have been added
         graph = Graph(list_roots, node_ordering=self.node_ordering)
-        if self.node_ordering:
-            # we do not want to expose the "Node order" column to the user
-            self.df_metrics = self.df_metrics.drop(columns="Node order")
+        # we do not want to expose the "Node order" column to the user
+        self.df_metrics = self.df_metrics.drop(columns="Node order", errors="ignore")
         graph.enumerate_traverse()
 
         # merge the metrics and node dataframes on the idx column
