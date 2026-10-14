@@ -7,6 +7,7 @@ import numpy as np
 import pytest
 
 from hatchet import GraphFrame
+from pandas.api.types import is_string_dtype
 
 
 def test_laghos_graphframe(laghos_perfflowaspect_array):
@@ -21,7 +22,7 @@ def test_laghos_graphframe(laghos_perfflowaspect_array):
         elif col in ("pid", "tid"):
             assert gf.dataframe[col].dtype == np.int64
         elif col in ("name", "ph"):
-            assert gf.dataframe[col].dtype == object
+            assert is_string_dtype(gf.dataframe[col].dtype)
 
     # TODO: add tests to confirm values in dataframe
 
@@ -38,7 +39,7 @@ def test_foobar_graphframe(foobar_perfflowaspect_array):
         elif col in ("pid", "tid"):
             assert gf.dataframe[col].dtype == np.int64
         elif col in ("name", "ph"):
-            assert gf.dataframe[col].dtype == object
+            assert is_string_dtype(gf.dataframe[col].dtype)
 
     # TODO: add tests to confirm values in dataframe
 
@@ -55,7 +56,7 @@ def test_ams_mpi_graphframe(ams_mpi_perfflowaspect_array):
         elif col in ("pid", "tid"):
             assert gf.dataframe[col].dtype == np.int64
         elif col in ("name", "ph"):
-            assert gf.dataframe[col].dtype == object
+            assert is_string_dtype(gf.dataframe[col].dtype)
 
     # TODO: add tests to confirm values in dataframe
 
@@ -91,7 +92,7 @@ def test_perfflowaspectobjectreader(perfflowaspectobjectreader_test_file):
         elif col in ("pid", "tid"):
             assert gf.dataframe[col].dtype == np.int64
         elif col in ("name", "ph"):
-            assert gf.dataframe[col].dtype == object
+            assert is_string_dtype(gf.dataframe[col].dtype)
 
 
 def test_smoketest_perfflowaspect_stats(smoketest_perfflowaspect_stats):
@@ -113,7 +114,7 @@ def test_smoketest_perfflowaspect_stats(smoketest_perfflowaspect_stats):
         elif col in ("pid", "tid", "usage_memory"):
             assert gf.dataframe[col].dtype == np.int64
         elif col in ("name", "ph"):
-            assert gf.dataframe[col].dtype == object
+            assert is_string_dtype(gf.dataframe[col].dtype)
 
 
 def test_smoketest_two_perfflowaspect_stats(smoketest_two_perfflowaspect_stats):
@@ -135,7 +136,7 @@ def test_smoketest_two_perfflowaspect_stats(smoketest_two_perfflowaspect_stats):
         elif col in ("pid", "tid", "usage_memory"):
             assert gf.dataframe[col].dtype == np.int64
         elif col in ("name", "ph"):
-            assert gf.dataframe[col].dtype == object
+            assert is_string_dtype(gf.dataframe[col].dtype)
 
 
 def test_smoketest_three_perfflowaspect(smoketest_three_perfflowaspect):
@@ -159,7 +160,7 @@ def test_smoketest_three_perfflowaspect(smoketest_three_perfflowaspect):
         elif col in ("pid", "tid", "usage_memory"):
             assert gf.dataframe[col].dtype == np.int64
         elif col in ("name", "ph"):
-            assert gf.dataframe[col].dtype == object
+            assert is_string_dtype(gf.dataframe[col].dtype)
 
 
 def test_smoketest_three_perfflowaspect_stats(smoketest_three_perfflowaspect_stats):
@@ -181,7 +182,7 @@ def test_smoketest_three_perfflowaspect_stats(smoketest_three_perfflowaspect_sta
         elif col in ("pid", "tid", "usage_memory"):
             assert gf.dataframe[col].dtype == np.int64
         elif col in ("name", "ph"):
-            assert gf.dataframe[col].dtype == object
+            assert is_string_dtype(gf.dataframe[col].dtype)
 
 
 def test_perfflowaspectobjectreader_timestamp_conversion(

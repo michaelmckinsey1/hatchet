@@ -23,4 +23,6 @@ if __name__ == "__main__":
     print(gf.dataframe)
 
     # Printout the graph component of the GraphFrame with the specified metric.
-    print(gf.tree(metric_column="avg#inclusive#sum#time.duration"))
+    # By default (native=False), Caliper metrics get readable names, e.g.
+    # avg#inclusive#sum#time.duration is "Avg time/rank".
+    print(gf.tree(metric_column="Avg time/rank"))

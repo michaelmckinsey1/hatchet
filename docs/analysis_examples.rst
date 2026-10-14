@@ -35,8 +35,10 @@ output is the `cali <http://llnl.github.io/Caliper/OutputFormats.html#cali>`_ fi
 .. literalinclude:: examples/read/caliper_caliperreader_cali.py
     :language: python
 
-Alternatively, the ``from_caliper`` reader can be used for Caliper files generated
-with Caliper version ``<=2.10``. This is useful if the user intends to use ``cali-query``.
+Alternatively, ``from_caliper`` runs a custom ``cali-query`` on raw data from
+Caliper's ``aggregate`` and ``recorder`` services. Group by ``path``
+(``prop:nested`` with ``cali-query`` before 2.10). For output from built-in
+configurations such as ``hatchet-region-profile``, use ``from_caliperreader``.
 
 .. literalinclude:: examples/read/caliper_cali_query.py
     :language: python

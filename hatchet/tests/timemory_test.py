@@ -6,6 +6,7 @@
 import numpy as np
 
 from hatchet import GraphFrame
+from pandas.api.types import is_string_dtype
 
 import pytest
 
@@ -33,7 +34,7 @@ def test_graphframe(timemory_json_data):
         elif col in ("nid", "rank"):
             assert gf.dataframe[col].dtype == np.int64
         elif col in ("name", "node"):
-            assert gf.dataframe[col].dtype == object
+            assert is_string_dtype(gf.dataframe[col].dtype)
 
 
 @pytest.mark.skipif(not timemory_avail, reason="timemory package not available")

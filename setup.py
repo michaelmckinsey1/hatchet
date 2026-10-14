@@ -112,7 +112,7 @@ setup(
         "PyYAML",
         "matplotlib",
         "numpy",
-        "pandas<3",
+        "pandas>=3",
         "textX < 3.0.0; python_version < '3.6'",
         "textX >= 3.0.0; python_version >= '3.6'",
         "multiprocess",

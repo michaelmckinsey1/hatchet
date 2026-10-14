@@ -589,7 +589,10 @@ class GraphFrame:
                 queue = mp.Queue()
                 processes = []
                 returned_frames = []
-                subframes = np.array_split(dataframe_copy, num_procs)
+                # Split DataFrame into chunks for parallel processing
+                # Use numpy's array_split on the index to get row ranges, then slice the DataFrame
+                indices = np.array_split(np.arange(len(dataframe_copy)), num_procs)
+                subframes = [dataframe_copy.iloc[idx] for idx in indices]
 
                 # Manually create a number of processes equal to the number of
                 # logical cpus available
@@ -973,7 +976,7 @@ class GraphFrame:
                 )
             else:
                 # Create a basic Node-metric dict for the new exclusive metric
-                new_data = {n: -1 for n in self.dataframe.index.values}
+                new_data = {n: -1 for n in self.dataframe.index.to_numpy()}
                 # Traverse the graph
                 for node in self.graph.traverse():
                     # Sum up the inclusive metric values of the current node's children
@@ -1387,7 +1390,7 @@ class GraphFrame:
                 np.array(
                     [x.__hash__() for x in self.dataframe["node"]], dtype=np.uint64
                 ),
-                self.dataframe.index.values.astype(np.uint64),
+                self.dataframe.index.to_numpy().astype(np.uint64),
             )
         ).T
         other_hsh_ndx = np.vstack(
@@ -1395,7 +1398,7 @@ class GraphFrame:
                 np.array(
                     [x.__hash__() for x in other.dataframe["node"]], dtype=np.uint64
                 ),
-                other.dataframe.index.values.astype(np.uint64),
+                other.dataframe.index.to_numpy().astype(np.uint64),
             )
         ).T
 
@@ -1448,8 +1451,9 @@ class GraphFrame:
 
         # case where self is a superset of other
         if snio_len != 0:
-            self_missing_node = self.dataframe["_missing_node"].values
-            snio_indices = self_not_in_other.index.values
+            # .copy() ensures writable arrays for Cython operations with CoW enabled
+            self_missing_node = self.dataframe["_missing_node"].to_numpy().copy()
+            snio_indices = self_not_in_other.index.to_numpy().copy()
 
             # This function adds 1 to all nodes in self.dataframe['_missing_node'] which
             # are in self but not in the other graphframe

@@ -839,7 +839,7 @@ def test_groupby_aggregate_simple(mock_dag_literal_module):
     agg_func = {"time (inc)": np.max, "time": np.max}
     out_gf = gf.groupby_aggregate(groupby_func, agg_func)
 
-    assert all(m in out_gf.dataframe.name.values for m in modules)
+    assert all(m in out_gf.dataframe.name.to_numpy() for m in modules)
     assert len(out_gf.graph) == len(modules)
 
 
@@ -870,7 +870,7 @@ def test_groupby_aggregate_complex(mock_dag_literal_module_complex):
     agg_func = {"time (inc)": np.sum, "time": np.sum}
     out_gf = gf.groupby_aggregate(groupby_func, agg_func)
 
-    assert all(m in out_gf.dataframe.name.values for m in modules)
+    assert all(m in out_gf.dataframe.name.to_numpy() for m in modules)
     assert len(out_gf.graph) == len(modules)
 
 
@@ -902,7 +902,7 @@ def test_groupby_aggregate_more_complex(mock_dag_literal_module_more_complex):
     agg_func = {"time (inc)": np.sum, "time": np.sum}
     out_gf = gf.groupby_aggregate(groupby_func, agg_func)
 
-    assert all(m in out_gf.dataframe.name.values for m in modules)
+    assert all(m in out_gf.dataframe.name.to_numpy() for m in modules)
     assert len(out_gf.graph) == len(modules)
 
 
@@ -1046,7 +1046,7 @@ def test_filter_squash_query_nan_and_inf_metric(small_mock1, small_mock2):
     assert all(pd.isnull(time) for time in filt_nan_gf3.dataframe["time (inc)"])
     assert all(pd.isnull(time) for time in filt_nan_gf3.dataframe["time"])
     assert filt_nan_gf3.dataframe.shape[0] == 2
-    assert sorted(filt_nan_gf3.dataframe["name"].values) == ["D", "G"]
+    assert sorted(filt_nan_gf3.dataframe["name"].to_numpy()) == ["D", "G"]
 
     query_inf = [{"time": "== np.inf"}]
     filt_inf_gf3 = gf3.filter(query_inf, squash=True)
@@ -1055,7 +1055,7 @@ def test_filter_squash_query_nan_and_inf_metric(small_mock1, small_mock2):
     assert all(np.isinf(inc_time) for inc_time in filt_inf_gf3.dataframe["time (inc)"])
     assert all(np.isinf(exc_time) for exc_time in filt_inf_gf3.dataframe["time"])
     assert filt_inf_gf3.dataframe.shape[0] == 1
-    assert filt_inf_gf3.dataframe["name"].values[0] == "B"
+    assert filt_inf_gf3.dataframe["name"].to_numpy()[0] == "B"
 
 
 def test_filter_squash_query_metric_with_nan_and_inf(small_mock1, small_mock2):
@@ -1087,7 +1087,7 @@ def test_filter_nan_and_inf(small_mock1, small_mock2):
     assert all(pd.isnull(inc_time) for inc_time in filt_nan_gf3.dataframe["time (inc)"])
     assert all(pd.isnull(exc_time) for exc_time in filt_nan_gf3.dataframe["time"])
     assert filt_nan_gf3.dataframe.shape[0] == 2
-    assert sorted(filt_nan_gf3.dataframe["name"].values) == ["D", "G"]
+    assert sorted(filt_nan_gf3.dataframe["name"].to_numpy()) == ["D", "G"]
 
     filt_inf_gf3 = gf3.filter(lambda x: np.isinf(x["time"]), squash=True)
 
@@ -1095,7 +1095,7 @@ def test_filter_nan_and_inf(small_mock1, small_mock2):
     assert all(np.isinf(inc_time) for inc_time in filt_inf_gf3.dataframe["time (inc)"])
     assert all(np.isinf(exc_time) for exc_time in filt_inf_gf3.dataframe["time"])
     assert filt_inf_gf3.dataframe.shape[0] == 1
-    assert filt_inf_gf3.dataframe["name"].values == "B"
+    assert filt_inf_gf3.dataframe["name"].to_numpy()[0] == "B"
 
 
 def test_filter_with_nan_and_inf(small_mock1, small_mock2):
@@ -1111,7 +1111,7 @@ def test_filter_with_nan_and_inf(small_mock1, small_mock2):
     assert filter_gf3.dataframe["time"].sum() == np.inf
     assert filter_gf3.dataframe["time (inc)"].sum() == np.inf
     assert filter_gf3.dataframe.shape[0] == 2
-    assert sorted(filter_gf3.dataframe["name"].values) == ["B", "H"]
+    assert sorted(filter_gf3.dataframe["name"].to_numpy()) == ["B", "H"]
 
 
 def test_inc_metric_only(mock_graph_inc_metric_only):
@@ -1123,8 +1123,8 @@ def test_inc_metric_only(mock_graph_inc_metric_only):
     filt_gf = gf.filter(lambda x: x["time (inc)"] > 50, squash=True, num_procs=1)
 
     assert len(filt_gf.graph) == 3
-    assert all(filt_gf.dataframe["name"].values == ["A", "E", "H"])
-    assert all(filt_gf.dataframe["time (inc)"].values == [130, 55, 55])
+    assert all(filt_gf.dataframe["name"].to_numpy() == ["A", "E", "H"])
+    assert all(filt_gf.dataframe["time (inc)"].to_numpy() == [130, 55, 55])
     assert gf.inc_metrics == filt_gf.inc_metrics
     assert gf.exc_metrics == filt_gf.exc_metrics
 
