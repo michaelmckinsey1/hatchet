@@ -8,6 +8,7 @@
 from __future__ import division
 
 import os
+from itertools import product
 
 import numpy as np
 import pandas as pd
@@ -171,6 +172,89 @@ def test_subtree_product():
     assert gf.dataframe.loc[c, "out2"] == 2
     assert gf.dataframe.loc[d, "out2"] == 4
     assert gf.dataframe.loc[e, "out2"] == 2
+
+
+def _sum_test_graph(dag):
+    """Tree: a -> (b -> c, d -> e).  DAG: a -> (b -> d -> e, c -> d)."""
+    if dag:
+        d = Node.from_lists(("d", "e"))
+        return Graph.from_lists(("a", ("b", d), ("c", d)))
+    return Graph.from_lists(("a", ("b", "c"), ("d", "e")))
+
+
+def _sum_test_graphframe(graph, levels, rows_per_entry=None, shuffle=False):
+    """GraphFrame whose index is "node" plus ``levels`` (a dict of level names
+    to values), with an exclusive "time" of 1 in every row. Each index entry
+    of a node has ``rows_per_entry[name]`` rows (default 1)."""
+    graph.enumerate_traverse()
+    rows = []
+    for node in graph.traverse():
+        name = node.frame["name"]
+        for entry in product(*levels.values()):
+            for _ in range((rows_per_entry or {}).get(name, 1)):
+                rows.append(dict(zip(levels, entry), node=node, name=name, time=1.0))
+    df = pd.DataFrame(rows).set_index(["node"] + list(levels)).sort_index()
+    if shuffle:
+        df = df.sample(frac=1, random_state=0)
+    return GraphFrame(graph, df, ["time"], [], "time")
+
+
+def _inclusive_by_name(gf):
+    """Map node names to the set of their "time (inc)" values."""
+    df = gf.dataframe
+    return {n: set(df.loc[df["name"] == n, "time (inc)"]) for n in set(df["name"])}
+
+
+@pytest.mark.parametrize("dag", [False, True])
+@pytest.mark.parametrize("shuffle", [False, True])
+@pytest.mark.parametrize(
+    "levels", [{"rank": [0, 1]}, {"rank": [0, 1], "thread": [0, 1]}]
+)
+def test_update_inclusive_columns_multi_index(levels, shuffle, dag):
+    # A sorted (node, rank, thread) index used to raise an AttributeError
+    # (https://github.com/LLNL/hatchet/issues/106), and DAG sums counted
+    # descendants with several parents more than once.
+    gf = _sum_test_graphframe(_sum_test_graph(dag), levels, shuffle=shuffle)
+    gf.update_inclusive_columns()
+
+    if dag:
+        expected = {"a": 5, "b": 3, "c": 3, "d": 2, "e": 1}
+    else:
+        expected = {"a": 5, "b": 2, "c": 1, "d": 2, "e": 1}
+    assert _inclusive_by_name(gf) == {n: {v} for n, v in expected.items()}
+    assert gf.dataframe["time"].eq(1).all()
+
+
+@pytest.mark.parametrize("dag", [False, True])
+@pytest.mark.parametrize(
+    "levels", [{}, {"rank": [0, 1]}, {"rank": [0, 1], "thread": [0]}]
+)
+def test_update_inclusive_columns_duplicate_index_entries(levels, dag):
+    # Several rows can share an index entry, e.g., when a Caliper profile is
+    # aggregated by attributes other than the call path and rank. Each row
+    # must be counted once, and all of them receive the entry's sum.
+    gf = _sum_test_graphframe(_sum_test_graph(dag), levels, {"b": 3, "d": 2})
+    assert not gf.dataframe.index.is_unique
+    gf.update_inclusive_columns()
+
+    if dag:
+        expected = {"a": 8, "b": 6, "c": 4, "d": 3, "e": 1}
+    else:
+        expected = {"a": 8, "b": 4, "c": 1, "d": 3, "e": 1}
+    assert _inclusive_by_name(gf) == {n: {v} for n, v in expected.items()}
+
+
+@pytest.mark.parametrize("levels", [{}, {"rank": [0, 1]}])
+def test_subgraph_sum_product_dag(levels):
+    gf = _sum_test_graphframe(_sum_test_graph(dag=True), levels)
+    gf.dataframe["time"] = 2.0
+
+    # in place, so the inputs are overwritten while they are being summed
+    gf.subgraph_sum(["time"], function=np.prod)
+
+    df = gf.dataframe
+    result = {n: set(df.loc[df["name"] == n, "time"]) for n in set(df["name"])}
+    assert result == {"a": {32}, "b": {8}, "c": {8}, "d": {4}, "e": {2}}
 
 
 def check_filter_no_squash(gf, filter_func, num_rows):
