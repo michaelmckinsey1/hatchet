@@ -50,6 +50,12 @@ def parallel_apply(filter_function, dataframe, queue):
     queue.put(filtered_df)
 
 
+def _default_sum(values):
+    """Default function of subtree_sum and subgraph_sum: the sum of a Series,
+    or NaN if all its values are NaN."""
+    return values.sum(min_count=1)
+
+
 class GraphFrame:
     """An input dataset is read into an object of this type, which includes a graph
     and a dataframe.
@@ -802,6 +808,33 @@ class GraphFrame:
             codes = [0] * len(index)
         return node_rows, codes
 
+    @staticmethod
+    def _group_sum_function(function, dtype):
+        """Helper function for subtree_sum and subgraph_sum.
+
+        Returns a callable that applies ``function`` to a list of values. For
+        the default function on float64 or int64 values, it computes the same
+        result as pandas' Series.sum(min_count=1), directly with NumPy: this
+        avoids building a Series for every group, which dominates run time.
+        """
+        if not (
+            function is _default_sum
+            and isinstance(dtype, np.dtype)
+            and dtype.name in ("float64", "int64")
+        ):
+            return lambda group: function(pd.Series(group))
+
+        def group_sum(group):
+            values = np.array(group, dtype=dtype)
+            if dtype.kind == "f":
+                missing = np.isnan(values)
+                if missing.all():
+                    return dtype.type("nan")
+                values[missing] = 0
+            return values.sum(dtype=dtype)
+
+        return group_sum
+
     def _write_sum_column(self, out_column, column, rows, results):
         """Helper function for subtree_sum and subgraph_sum.
 
@@ -817,9 +850,7 @@ class GraphFrame:
             ).sort_index()
         self.dataframe[out_column] = values.array
 
-    def subtree_sum(
-        self, columns, out_columns=None, function=lambda x: x.sum(min_count=1)
-    ):
+    def subtree_sum(self, columns, out_columns=None, function=_default_sum):
         """Compute sum of elements in subtrees.  Valid only for trees.
 
         For each row in the graph, ``out_columns`` will contain the
@@ -851,6 +882,7 @@ class GraphFrame:
 
         for column, out_column in zip(inputs, out_columns):
             values = column.tolist()
+            group_sum = self._group_sum_function(function, column.dtype)
             # sums[node] maps each index-entry code to the sum of node's subtree
             sums = {}
             out_rows, results = [], []
@@ -868,7 +900,7 @@ class GraphFrame:
                 node_sums = sums[node] = {}
                 for code, group in groups.items():
                     if node.children or len(group) > 1:
-                        node_sums[code] = function(pd.Series(group))
+                        node_sums[code] = group_sum(group)
                     else:
                         # a leaf is its own sum, unless rows share an index entry
                         node_sums[code] = group[0]
@@ -879,9 +911,7 @@ class GraphFrame:
 
             self._write_sum_column(out_column, column, out_rows, results)
 
-    def subgraph_sum(
-        self, columns, out_columns=None, function=lambda x: x.sum(min_count=1)
-    ):
+    def subgraph_sum(self, columns, out_columns=None, function=_default_sum):
         """Compute sum of elements in subgraphs.
 
         For each row in the graph, ``out_columns`` will contain the
@@ -924,6 +954,7 @@ class GraphFrame:
 
         for column, out_column in zip(inputs, out_columns):
             values = column.tolist()
+            group_sum = self._group_sum_function(function, column.dtype)
             out_rows, results = [], []
             for node, subgraph in subgraphs.items():
                 rows = node_rows[node]
@@ -933,9 +964,7 @@ class GraphFrame:
                     for row in node_rows.get(descendant, []):
                         if codes[row] in own_codes:
                             groups.setdefault(codes[row], []).append(values[row])
-                node_sums = {
-                    code: function(pd.Series(group)) for code, group in groups.items()
-                }
+                node_sums = {code: group_sum(group) for code, group in groups.items()}
                 out_rows.extend(rows)
                 results.extend(node_sums[codes[row]] for row in rows)
 

@@ -257,6 +257,35 @@ def test_subgraph_sum_product_dag(levels):
     assert result == {"a": {32}, "b": {8}, "c": {8}, "d": {4}, "e": {2}}
 
 
+@pytest.mark.parametrize("dag", [False, True])
+def test_default_sum_matches_series_sum(dag):
+    # The default function is computed with NumPy for float64 and int64
+    # columns. It must give exactly what Series.sum(min_count=1) gives, for
+    # order-sensitive values, NaNs, signed zeros, and groups of 9+ and 130+
+    # values (where NumPy's pairwise summation changes its strategy).
+    graph = _sum_test_graph(dag)
+    gf = _sum_test_graphframe(graph, {"rank": [0, 1]}, {"b": 130, "d": 9})
+    rng = np.random.default_rng(0)
+    values = [np.nan, -0.0, 0.0, 1e16, -1e16, 1.0, 0.1, 1 / 3, -2.5e-7]
+    gf.dataframe["time"] = rng.choice(values, len(gf.dataframe))
+    gf.dataframe["count"] = rng.integers(-5, 5, len(gf.dataframe))
+    gf.dataframe["missing"] = np.nan
+    columns = ["time", "count", "missing"]
+
+    gf.subgraph_sum(columns, ["fast " + c for c in columns])
+    gf.subgraph_sum(
+        columns, ["slow " + c for c in columns], function=lambda x: x.sum(min_count=1)
+    )
+
+    for c in columns:
+        fast = gf.dataframe["fast " + c].to_numpy()
+        slow = gf.dataframe["slow " + c].to_numpy()
+        assert fast.dtype == slow.dtype
+        # compare bits, so that -0.0 != 0.0
+        assert np.array_equal(fast.view(np.int64), slow.view(np.int64))
+    assert gf.dataframe["fast missing"].isna().all()
+
+
 def check_filter_no_squash(gf, filter_func, num_rows):
     """Ensure filtering and squashing results in the right Graph and GraphFrame."""
 
