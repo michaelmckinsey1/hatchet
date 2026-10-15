@@ -194,8 +194,7 @@ class Node:
     # ``other`` is not a Node. Pandas and NumPy routinely compare index labels
     # against objects of other types (e.g., the ints in a "rank" or "thread"
     # level, or slices) and rely on Python turning NotImplemented into a
-    # TypeError (for ordering) or an identity check (for equality). Raising an
-    # AttributeError instead escapes pandas' fallback logic (see issue #106).
+    # TypeError (for ordering) or an identity check (for equality).
     def __eq__(self, other):
         if not isinstance(other, Node):
             return NotImplemented
