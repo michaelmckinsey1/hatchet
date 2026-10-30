@@ -566,10 +566,15 @@ class CaliperNativeReader:
                 rank_list = range(0, int(num_ranks))
 
             # create a standard dict to be used for filling all missing rows
+            # An absent time-series observation is unknown, not a measured zero.
+            # Ordinary profiles still zero-fill missing intermediate nodes/ranks.
+            missing_value = np.nan if self.timeseries_level is not None else 0
             default_metric_dict = {}
             for idx, col in enumerate(self.record_data_cols):
                 if self.filename_or_caliperreader.attribute(col).is_value():
-                    default_metric_dict[list(self.record_data_cols)[idx]] = 0
+                    default_metric_dict[list(self.record_data_cols)[idx]] = (
+                        missing_value
+                    )
                 else:
                     default_metric_dict[list(self.record_data_cols)[idx]] = None
             default_metric_dict["nid"] = np.nan
@@ -718,6 +723,9 @@ class CaliperNativeReader:
     def read_timeseries(self, level="loop.start_iteration"):
         """Read in a timeseries Cali file. We need to intercept the read function
         so we can get a list of profiles for thicket
+
+        Nodes without an observation in a time step have NaN metric values.
+        Recorded zeros retain their values.
 
         Args:
             level (str): column name to split the Cali file on, default
