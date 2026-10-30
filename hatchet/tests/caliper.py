@@ -1128,6 +1128,70 @@ def test_rocm_kernel_records_merge_on_single_kernel_node():
     assert (parent_rows[metrics] == 0).to_numpy().all()
 
 
+@pytest.mark.parametrize("native", [True, False])
+@pytest.mark.parametrize("level", ["loop.start_iteration", "sample.iteration"])
+def test_timeseries_missing_observations(native, level):
+    """Missing samples stay NaN; recorded zeros and metric aliases are preserved."""
+    reader = _FakeCaliperReader(
+        records=[
+            {"path": ["main"], "memory": 679, "power": 389.0},
+            {"path": ["main", "cycle"], level: 0, "memory": 743, "power": 0.0},
+            {"path": ["main", "cycle"], level: 1, "memory": 744, "power": 392.0},
+            {"path": ["main", "optional"], level: 1, "memory": 0, "power": 17.0},
+            {"path": ["main", "cycle"], level: 2, "memory": 745},
+            {"path": ["main", "cycle"], level: 3, "memory": 746, "power": 394.0},
+            {"path": ["main", "optional"], level: 3, "memory": 747, "power": 18.0},
+        ],
+        attributes={
+            level: _FakeCaliperAttribute("uint", is_value=True),
+            "memory": _FakeCaliperAttribute("uint", is_value=True, alias="Memory"),
+            "power": _FakeCaliperAttribute("double", is_value=True, alias="Power"),
+        },
+    )
+
+    frames = GraphFrame.from_timeseries(reader, level=level, native=native)
+    assert len(frames) == 4
+    memory = "memory" if native else "Memory"
+    power = "power" if native else "Power"
+    expected = {
+        "main": ([679, np.nan, np.nan, np.nan], [389, np.nan, np.nan, np.nan]),
+        "cycle": ([743, 744, 745, 746], [0, 392, np.nan, 394]),
+        "optional": ([np.nan, 0, np.nan, 747], [np.nan, 17, np.nan, 18]),
+    }
+    tables = [gf.dataframe.set_index("name") for gf in frames]
+    for iteration, table in enumerate(tables):
+        assert set(table.index) == set(expected)
+        assert table.loc["cycle", level] == iteration
+    for name, (memory_values, power_values) in expected.items():
+        np.testing.assert_equal(
+            [table.loc[name, memory] for table in tables], memory_values
+        )
+        np.testing.assert_equal(
+            [table.loc[name, power] for table in tables], power_values
+        )
+
+
+def test_native_missing_nodes_and_ranks_remain_zero():
+    """Ordinary profiles still zero-fill intermediate nodes and missing ranks."""
+    reader = _FakeCaliperReader(
+        records=[
+            {"path": ["main", "left"], "mpi.rank": 0, "time.duration": 4.0},
+            {"path": ["main", "right"], "mpi.rank": 1, "time.duration": 8.0},
+        ],
+        attributes={
+            "mpi.rank": _FakeCaliperAttribute("uint", is_value=True),
+            "time.duration": _FakeCaliperAttribute("double", is_value=True),
+        },
+    )
+    gf = GraphFrame.from_caliperreader(reader, native=True)
+    table = gf.dataframe.reset_index().set_index(["name", "rank"])
+    assert len(table) == 6
+    for name, expected in {"main": [0, 0], "left": [4, 0], "right": [0, 8]}.items():
+        np.testing.assert_equal(
+            [table.loc[(name, rank), "time.duration"] for rank in (0, 1)], expected
+        )
+
+
 def test_graphframe_timeseries_lulesh_from_file(caliper_timeseries_cali):
     """Sanity check the timeseries Caliper reader by examining a known input."""
 
