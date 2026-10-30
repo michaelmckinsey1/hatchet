@@ -1114,7 +1114,18 @@ def test_rocm_kernel_records_merge_on_single_kernel_node():
     assert kernel_rows.iloc[0]["SQ_INSTS"] == 42.0
     assert kernel_rows.iloc[0]["MaxPerfectLoopDimensions"] == 2
     assert kernel_rows.iloc[0]["time.duration"] == 5.0
-    assert "|-" not in df["name"].tolist()
+
+    # The "|-" placeholder from the record path is kept as the kernel's parent
+    # (hipLaunchKernel -> |- -> kernel), and the kernel's metrics stay on the
+    # kernel node instead of being aggregated into its parents.
+    assert len(df) == 3
+    kernel_node = kernel_rows.iloc[0]["node"]
+    assert [p.frame["name"] for p in kernel_node.parents] == ["|-"]
+    placeholder = kernel_node.parents[0]
+    assert [p.frame["name"] for p in placeholder.parents] == ["hipLaunchKernel"]
+    parent_rows = df[df["name"] != kernel_name]
+    metrics = ["time.duration", "SQ_INSTS", "MaxPerfectLoopDimensions"]
+    assert (parent_rows[metrics] == 0).to_numpy().all()
 
 
 @pytest.mark.parametrize("native", [True, False])
